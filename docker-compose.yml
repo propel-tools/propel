@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=mysql://root:pass_241@db:3306/propel
+    depends_on:
+      - db
+    networks:
+      - propel-network
+    volumes:
+      - ./logs:/app/logs
+    command: >
+      sh -c "npx prisma migrate deploy && node server.js"
+
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      - MYSQL_DATABASE=propel
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=pass_241
+      - MYSQL_ROOT_PASSWORD=pass_241
+    ports:
+      - "3306:3306"
+    networks:
+      - propel-network
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  sync-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=mysql://root:pass_241@db:3306/propel
+    depends_on:
+      - db
+      - app
+    networks:
+      - propel-network
+    command: >
+      sh -c "node ./scripts/scheduled-sync.js"
+
+networks:
+  propel-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    driver: local
+

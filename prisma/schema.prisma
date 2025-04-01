@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String
+  domain      String   @unique
+  customerId  String   @unique
+  apiKey      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  teams       Team[]
+  members     Member[]
+  badges      Badge[]
+  syncConfigs SyncConfig[]
+}
+
+model SyncConfig {
+  id           String   @id @default(cuid())
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId     String
+  provider     String   // "ldap" or "google"
+  config       Json     // Configuration for the sync provider
+  lastSyncedAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @db.Text
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  members     Member[]
+
+  @@index([tenantId])
+}
+
+model Member {
+  id           String   @id @default(cuid())
+  externalId   String?  // ID from external system (LDAP/Google)
+  name         String
+  email        String
+  role         String
+  isOnCall     Boolean  @default(false)
+  phone        String?
+  skills       Json     // Using JSON type for array in MySQL
+  joinedAt     DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId       String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId     String
+  badges       MemberBadge[]
+
+  @@unique([email, tenantId])
+  @@index([tenantId])
+  @@index([teamId])
+  @@index([externalId, tenantId])
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @db.Text
+  color       String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  members     MemberBadge[]
+
+  @@unique([name, tenantId])
+  @@index([tenantId])
+}
+
+model MemberBadge {
+  id        String   @id @default(cuid())
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  badgeId   String
+  awardedAt DateTime @default(now())
+
+  @@unique([memberId, badgeId])
+  @@index([memberId])
+  @@index([badgeId])
+}
+
