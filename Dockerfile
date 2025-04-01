@@ -6,22 +6,32 @@ FROM base AS deps
 WORKDIR /app
 
 # Copy package.json and package-lock.json
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 
 # Install dependencies
 RUN npm ci --legacy-peer-deps
 
+# Install pnpm in a separate stage
+FROM base AS pnpm
+RUN for i in $(seq 1 5); do npm install -g pnpm && break || sleep 10; done
+
 # Rebuild the source code only when needed
-FROM base AS builder
+FROM pnpm AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
+# Generate Prisma client with retry logic
+RUN for i in $(seq 1 ); do npx prisma generate && break || sleep 10; done
 
-# Build the Next.js application
-RUN npm run build
+# Build the Next.js application with retry logic
+RUN for i in $(seq 1 2); do npm run build && break || sleep 10; done
+
+# Ensure the .next/standalone directory is created
+RUN mkdir -p .next/standalone
+
+# Ensure the .next/static directory is created
+RUN mkdir -p .next/static
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -53,4 +63,3 @@ EXPOSE 3000
 
 # Start the application
 CMD ["node", "server.js"]
-

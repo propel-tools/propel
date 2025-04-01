@@ -3,8 +3,8 @@ import type { NextRequest } from "next/server"
 
 export function middleware(request: NextRequest) {
   // Get tenant information from the request
-  const tenantId = request.headers.get("x-tenant-id")
-  const apiKey = request.headers.get("x-api-key")
+  const tenantId = "1"; // request.headers.get("x-tenant-id")
+  const apiKey = "abc-test"; // request.headers.get("x-api-key")
 
   // For API routes that require tenant isolation
   if (

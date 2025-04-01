@@ -12,6 +12,11 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft } from "lucide-react"
 
+import { addTeam } from "@/services/team-service"
+import { TeamCreate } from "@/types/team"
+import { toast } from "@/components/ui/use-toast"
+import { useToast } from "@/components/ui/use-toast"
+
 export default function CreateTeamPage() {
   const router = useRouter()
   const [teamData, setTeamData] = useState({
@@ -28,8 +33,38 @@ export default function CreateTeamPage() {
     e.preventDefault()
     // In a real app, you would save the team data to your backend
     console.log("Creating team:", teamData)
-
-    // Redirect to the dashboard after team creation
+    const newTeam: TeamCreate = {
+      name: teamData.name,
+      description: teamData.description
+    }
+    // Call the createTeam function to create the team
+    addTeam(newTeam)
+      .then(() => {
+        // Handle success (e.g., show a success message)
+        console.log("Team created successfully")
+        toast({
+          title: "Team Created",
+          description: "Your team has been created successfully.",
+          variant: "default",
+        })
+      })
+      .catch((error) => {
+        // Handle error (e.g., show an error message)
+        console.error("Error creating team:", error)
+        toast({
+          title: "Team creation failed",
+          description: "Something went wrong while creating the team.",
+          variant: "default",
+        })
+      })
+    // Reset the form
+    setTeamData({
+      name: "",
+      description: "",
+    })
+    // Optionally, you can show a success message or redirect the user
+    // For example, you can use a toast notification or a modal
+   
     router.push("/")
   }
 

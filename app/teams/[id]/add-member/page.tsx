@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft } from "lucide-react"
+import { addMember } from "@/services/member-service"
+import { MemberCreate } from "@/types/member"
 
 interface AddMemberPageProps {
   params: {
@@ -39,9 +41,29 @@ export default function AddMemberPage({ params }: AddMemberPageProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // In a real app, you would save the member data to your backend
-    console.log("Adding member to team", teamId, memberData)
+    // Validate the member data
+    if (memberData.name && memberData.email && memberData.role) {
+      console.log("Adding member to team", teamId, memberData)
+      const newMember: MemberCreate = {
+        name: memberData.name,
+        email: memberData.email,
+        role: memberData.role,
+        teamId: teamId,
+        isOnCall: false,
+        badges: []
+      }
 
+      // Call the addMember function to add the member
+      addMember(newMember)
+      .then(() => {
+        // Handle success (e.g., show a success message)
+        console.log("Member added successfully")
+      })
+      .catch((error) => {
+        // Handle error (e.g., show an error message)
+        console.error("Error adding member:", error)
+      })
+    }
     // Redirect to the team page after member addition
     router.push(`/teams/${teamId}`)
   }
